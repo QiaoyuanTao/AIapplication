@@ -1,0 +1,122 @@
+/* ============================================================
+   全局样式 global.css
+   在 main.js 中 import 引入，作用于整个应用
+   ============================================================ */
+
+/* ---------- CSS 变量：统一管理主题色 ---------- */
+:root {
+  /* 主题渐变色 */
+  --brand-1: #6d5efc;
+  --brand-2: #9b5cff;
+  --brand-3: #22d3ee;
+  --brand-gradient: linear-gradient(
+    135deg,
+    var(--brand-1),
+    var(--brand-2) 55%,
+    var(--brand-3)
+  );
+
+  /* 文字颜色 */
+  --text-primary: #e8ebf4;
+  --text-secondary: #9aa3b8;
+  --text-muted: #5c6478;
+
+  /* 背景与边框 */
+  --bg-base: #0b0f1a;
+  --bg-panel: rgba(255, 255, 255, 0.05);
+  --border-light: rgba(255, 255, 255, 0.09);
+
+  /* 阴影与圆角 */
+  --shadow-brand: 0 4px 14px rgba(124, 108, 255, 0.35);
+  --radius-card: 20px;
+}
+
+/* ---------- 基础重置 ---------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ---------- 根元素与页面基础 ---------- */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  /* 防止 iOS 上字体自动加粗抖动 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* 禁用点击高亮（移动端） */
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  height: 100%;
+}
+
+/* ---------- 全局链接 ---------- */
+a {
+  color: #a5b4fc;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #c7d2fe;
+}
+
+/* ---------- 全局选中文本颜色 ---------- */
+::selection {
+  background: rgba(124, 108, 255, 0.4);
+  color: #fff;
+}
+
+/* ---------- 全局滚动条 ---------- */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+/* ---------- 输入类元素统一字体（继承 body，避免浏览器默认差异） ---------- */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- 禁用状态 ---------- */
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

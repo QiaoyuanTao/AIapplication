@@ -1,0 +1,53 @@
+# ============ 依赖 ============
+# 匹配所有层级的 node_modules（client/、server/ 都生效）
+node_modules/
+package/.npmrc
+
+# ============ 环境变量 / 密钥，绝不提交 ============
+.env
+.env.*
+!.env.example
+
+# ============ 日志 ============
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============ 前端构建产物（Vite） ============
+dist/
+dist-ssr/
+coverage/
+*.local
+*.tsbuildinfo
+.eslintcache
+*.timestamp-*-*.mjs
+
+# Cypress / Vitest
+/cypress/videos/
+/cypress/screenshots/
+__screenshots__/
+
+# ============ 系统文件 ============
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# ============ 编辑器 ============
+**/.vscode/*
+!**/.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+
+# ============ 本地杂项（按需取消注释） ============
+# 根目录那份中文对话存档不想上传的话，取消下面这行注释
+# 对话存档-*.md
