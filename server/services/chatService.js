@@ -50,7 +50,11 @@ async function executeToolCalls(toolCalls, signal) {
     if (signal?.aborted) throw new Error("客户端已取消请求");
     try {
       const result = await runTool(call.name, call.arguments);
-      toolMessages.push({ role: "tool", tool_name: call.name, content: result });
+      toolMessages.push({
+        role: "tool",
+        tool_name: call.name,
+        content: result,
+      });
     } catch (err) {
       console.error(`${call.name}工具调用失败`, err);
       toolMessages.push({
@@ -78,7 +82,10 @@ function buildMessages(question) {
 /**
  * 用无 tools 的流式 chat 把工具结果总结成自然语言。
  */
-async function summarizeWithModel(messages, { think, signal, onEvent, target }) {
+async function summarizeWithModel(
+  messages,
+  { think, signal, onEvent, target },
+) {
   const streamed = await chatStream({
     messages,
     think,
@@ -184,7 +191,11 @@ async function runChat(question, { think = true, signal, onEvent } = {}) {
 
   conversations.push(
     { role: "user", content: question },
-    { role: "assistant", content: result.content, thinking: result.thinking || undefined },
+    {
+      role: "assistant",
+      content: result.content,
+      thinking: result.thinking || undefined,
+    },
   );
   if (conversations.length > MAX_HISTORY) {
     conversations.splice(0, conversations.length - MAX_HISTORY);
