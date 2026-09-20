@@ -74,7 +74,7 @@ const translate = async (text, options = {}) => {
     needIntervene,
     tag_handling,
     ignore_tags,
-    useSign = false,
+    useSign = process.env.BAIDU_AUTH_MODE !== "api-key",
   } = options;
 
   if (!BAIDU_APP_ID || !BAIDU_API_KEY) {
@@ -118,7 +118,8 @@ const translate = async (text, options = {}) => {
 
   if (useSign) {
     // sign 鉴权：body 追加 salt + sign，不带 Authorization 头
-    const salt = String(Date.now());
+    // salt 必须是数字；使用字符串会触发百度 AI 接口的 JSON 解析错误
+    const salt = Date.now();
     body.salt = salt;
     body.sign = buildSign(q, salt);
   } else {
@@ -155,8 +156,14 @@ const translate = async (text, options = {}) => {
 
   if (data.error_code) {
     const hint = ERROR_MESSAGES[data.error_code] || "";
+    let extra = "";
+    if (String(data.error_code) === "54001" && !useSign) {
+      extra =
+        "（当前使用 Bearer 鉴权；你的配置看起来是传统 appid + 密钥，" +
+        "请改用 sign 鉴权：translate(text, { useSign: true }），或在 .env 设置 BAIDU_AUTH_MODE=api-key 以启用真正的 API Key）";
+    }
     throw new Error(
-      `百度翻译失败 [${data.error_code}] ${data.error_msg || ""}${hint ? `：${hint}` : ""}`,
+      `百度翻译失败 [${data.error_code}] ${data.error_msg || ""}${hint ? `：${hint}` : ""}${extra}`,
     );
   }
 
@@ -167,17 +174,7 @@ const translate = async (text, options = {}) => {
   return data.trans_result.map((item) => item.dst).join("\n");
 };
 
-/**
- * 返回官方原始结构 { from, to, trans_result: [{ src, dst }] }
- * 需要拿到原文对照时用这个方法
- */
-const translateRaw = async (text, options = {}) => {
-  const dst = await translate(text, options);
-  return dst;
-};
-
 module.exports = {
   translate,
-  translateRaw,
   buildSign,
 };

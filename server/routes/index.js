@@ -1,35 +1,22 @@
-const express = require("express");
+// 薄路由层：只做三件事
+// 1. 校验 question / think 参数；
+// 2. 调 chatService 跑对话，把 think/answer 事件转成 SSE 行；
+// 3. 暴露 /history 和 /clear。
+// 工具约束、模型调用、历史裁剪都在 services / tools / llm 里。
 
-const { getWeather } = require("../utils/weatherHandler");
-const { translate } = require("../utils/translateHandler");
+const express = require("express");
 const {
-  buildFunctionCallPrompt,
-  buildAnswerPrompt,
-} = require("../utils/promptTemplates");
-const { callLLM, callLLMStream } = require("../utils/LLM");
+  runChat,
+  getHistory,
+  clearHistory,
+} = require("../services/chatService");
 
 const router = express.Router();
 
-// 支持上下文，用数组存储会话记录，下一次会话一同发送给大模型
-const conversations = [];
-
-const toolMap = {
-  getWeather,
-  translate,
-};
-
-/**
- * 统一把 LLM 流式增量转发给前端
- * @param {object} res Express 响应对象
- * @param {object} chunk { thinking, answer }
- * @returns {{ thinking: string, answer: string }} 本次转发的增量
- */
-function forwardChunk(res, chunk) {
-  const thinking = chunk.thinking || "";
-  const answer = chunk.answer || "";
-  if (thinking) res.write(`${JSON.stringify({ think: thinking })}\n`);
-  if (answer) res.write(`${JSON.stringify({ answer })}\n`);
-  return { thinking, answer };
+function writeEvent(res, type, text) {
+  if (!text) return;
+  const field = type === "think" ? "think" : "answer";
+  res.write(`${JSON.stringify({ [field]: text })}\n`);
 }
 
 router.post("/ask", async (req, res) => {
@@ -39,129 +26,49 @@ router.post("/ask", async (req, res) => {
   if (!question) {
     return res.status(400).json({ error: "question 不能为空" });
   }
+  if (question.length > 4000) {
+    return res.status(400).json({ error: "question 过长，请分段提问" });
+  }
 
-  // 前端可传 think=false 关闭思考；默认 true，透传 qwen3 的思考过程
   const think = req.body?.think !== false;
 
-  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Content-Type", "application/x-ndjson");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  // 思考过程单独存，不混入正文，避免污染上下文
-  let finalThinking = "";
-  let finalResponse = "";
+  // 客户端断开（关闭页面/点停止）时取消模型请求，避免 qwen3 空转烧 token
+  // 注意：必须监听 res 的 close，而不是 req 的 close。
+  // req 是可读流，body 解析完它的 close 就会触发（正常请求也会触发），
+  // 用它来 abort 会把所有正常请求都误杀；res 的 close + !writableEnded
+  // 才代表“响应还没写完连接就断了”，即真正的客户端断开。
+  const stopController = new AbortController();
+  const onResClose = () => {
+    if (!res.writableEnded) stopController.abort();
+  };
+  res.on("close", onResClose);
 
   try {
-    const functionCallPrompt = buildFunctionCallPrompt(question);
-    // 工具判断不需要展示思考过程，直接关闭 think
-    const functionCallResult = await callLLM(functionCallPrompt, {
-      think: false,
+    await runChat(question, {
+      think,
+      signal: stopController.signal,
+      onEvent: (event) => writeEvent(res, event.type, event.text),
     });
-
-    if (functionCallResult.trim() === "无函数调用") {
-      const prompt = [
-        "你是一个中文智能助手请严格使用中文来回答用户问题",
-        ...conversations.map(
-          (item) => `${item.role === "user" ? "用户" : "助手"}:${item.content}`,
-        ),
-        `用户的问题:${question}`,
-      ].join("\n");
-
-      const result = await callLLMStream(
-        prompt,
-        (chunk) => {
-          const { thinking, answer } = forwardChunk(res, chunk);
-          finalThinking += thinking;
-          finalResponse += answer;
-        },
-        { think },
-      );
-      finalThinking = result.thinking || finalThinking;
-      finalResponse = result.response || finalResponse;
-    } else {
-      const parsedToolCalls = JSON.parse(functionCallResult);
-      const toolCalls = Array.isArray(parsedToolCalls)
-        ? parsedToolCalls
-        : [parsedToolCalls];
-      const toolResults = [];
-
-      for (const tool of toolCalls) {
-        const { function: functionName, args = {} } = tool;
-        const toolHandler = toolMap[functionName];
-
-        if (typeof toolHandler !== "function") {
-          console.error(`${functionName}工具不存在`);
-          toolResults.push({
-            function: functionName,
-            args,
-            error: "未知工具",
-          });
-          continue;
-        }
-
-        try {
-          let result;
-          if (functionName === "translate") {
-            result = await toolHandler(args.input);
-          } else if (functionName === "getWeather") {
-            result = await toolHandler(args.city);
-          }
-
-          toolResults.push({ function: functionName, args, result });
-        } catch (err) {
-          console.error(`${functionName}工具调用失败`, err);
-          toolResults.push({
-            function: functionName,
-            args,
-            error: err.message,
-          });
-        }
-      }
-
-      const answerPrompt = buildAnswerPrompt(question, toolResults);
-      const result = await callLLMStream(
-        answerPrompt,
-        (chunk) => {
-          const { thinking, answer } = forwardChunk(res, chunk);
-          finalThinking += thinking;
-          finalResponse += answer;
-        },
-        { think },
-      );
-      finalThinking = result.thinking || finalThinking;
-      finalResponse = result.response || finalResponse;
-    }
-
-    conversations.push(
-      { role: "user", content: question },
-      {
-        role: "assistant",
-        content: finalResponse,
-        thinking: finalThinking || undefined,
-      },
-    );
-
-    if (conversations.length > 10) {
-      conversations.splice(0, conversations.length - 10);
-    }
   } catch (err) {
+    // 流已开始只能断流，不能再发 JSON 状态码（见 app.js 错误中间件同理）
     console.error("处理对话失败:", err);
-    res.write(
-      `${JSON.stringify({ answer: "抱歉，当前请求处理失败，请稍后重试" })}\n`,
-    );
+    writeEvent(res, "answer", "抱歉，当前请求处理失败，请稍后重试");
   } finally {
     res.end();
   }
 });
 
-// 用户访问历史记录
 router.get("/history", (req, res) => {
-  res.json(conversations);
+  res.json(getHistory());
 });
 
-// 清空历史记录
-router.post("/claer", (req, res) => {
-  conversations.length = 0;
+// 前端历史拼写可能是 /clear，保留 /claer 做兼容
+router.post(["/clear", "/claer"], (req, res) => {
+  clearHistory();
   res.json({ message: "历史记录已清空" });
 });
 

@@ -54,12 +54,31 @@ async function fetchJson(url, { timeoutMs = 10000 } = {}) {
   try {
     data = await response.json();
   } catch {
-    throw new Error(`和风天气返回非 JSON（HTTP ${response.status}），请重试`);
+    throw new Error(
+      `和风天气请求失败 [HTTP ${response.status}]：接口未返回 JSON（Geo 404 多为 KEY 未绑定 ${GEO_HOST}，天气 403 多为 KEY 未绑定 ${WEATHER_HOST}，请到和风控制台「设置 - API Host」核对绑定域名）`,
+    );
   }
   return data;
 }
 
+/**
+ * 和风新版接口统一返回 { error: { status, type, title, detail } }，
+ * 老版 Geo / v7 返回 { code: "200" }。两种格式都要兼容。
+ */
 function checkCode(data) {
+  if (!data || typeof data !== "object") {
+    throw new Error("和风天气返回格式异常");
+  }
+  if (data.error) {
+    const status = data.error.status;
+    if (status === 403) {
+      throw new Error(
+        `和风天气请求失败 [403 Invalid Host]：当前 KEY 未绑定 ${WEATHER_HOST} / ${GEO_HOST}，请到和风控制台「设置 - API Host」查看该 KEY 绑定的域名后再请求（也可在 .env 用 QWEATHER_API_HOST / QWEATHER_GEO_HOST 覆盖）`,
+      );
+    }
+    const hint = CODE_MESSAGES[status] || data.error.detail || "未知错误";
+    throw new Error(`和风天气请求失败 [${status}]：${hint}`);
+  }
   if (data.code !== "200") {
     const hint = CODE_MESSAGES[data.code] || "未知错误";
     throw new Error(`和风天气请求失败 [${data.code}]：${hint}`);
@@ -180,12 +199,13 @@ async function getWeather(city = "北京", options = {}) {
  * 把实时天气格式化成一句中文，方便直接喂给大模型 / 前端展示
  */
 function formatNow(result) {
-  const n = result.now;
-  if (!n) return JSON.stringify(result);
+  const n = result.now || {};
   return (
-    `${result.city}当前天气：${n.text}，气温 ${n.temp}℃，体感 ${n.feelsLike}℃，` +
-    `${n.windDir}${n.windScale}级（${n.windSpeed}km/h），相对湿度 ${n.humidity}%，` +
-    `能见度 ${n.vis}km，更新于 ${result.updateTime}`
+    `${result.city ?? "未知城市"}当前天气：${n.text ?? "未知"}，` +
+    `气温 ${n.temp ?? "?"}℃，体感 ${n.feelsLike ?? "?"}℃，` +
+    `${n.windDir ?? ""}${n.windScale ?? "?"}级（${n.windSpeed ?? "?"}km/h），` +
+    `相对湿度 ${n.humidity ?? "?"}%，能见度 ${n.vis ?? "?"}km，` +
+    `更新于 ${result.updateTime ?? "未知时间"}`
   );
 }
 
