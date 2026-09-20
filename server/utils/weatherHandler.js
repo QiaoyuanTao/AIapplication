@@ -4,9 +4,30 @@ const HEFENG_API_KEY = process.env.HEFENG_API_KEY;
 
 // 官方文档: https://dev.qweather.com/docs/api/
 // 免费订阅用 devapi.qweather.com，标准/付费订阅用 api.qweather.com
-// 可在 .env 里加 QWEATHER_API_HOST=api.qweather.com 来切换
+// 专属 API Host（如 xxx.re.qweatherapi.com）：天气与 Geo 共用同一个域名，
+// 天气路径为 /v7/...，Geo 路径为 /geo/v2/...（与公共域名不同）
+// 可在 .env 里用 QWEATHER_API_HOST / QWEATHER_GEO_HOST 覆盖
 const WEATHER_HOST = process.env.QWEATHER_API_HOST || "devapi.qweather.com";
-const GEO_HOST = process.env.QWEATHER_GEO_HOST || "geoapi.qweather.com";
+const GEO_HOST =
+  process.env.QWEATHER_GEO_HOST || process.env.QWEATHER_API_HOST || "geoapi.qweather.com";
+
+// 专属域名（*.qweatherapi.com）Geo 接口带 /geo 前缀，公共 geoapi.qweather.com 不带
+function geoLookupUrl(location) {
+  const prefix = GEO_HOST.includes("qweatherapi.com") ? "/geo" : "";
+  return (
+    `https://${GEO_HOST}${prefix}/v2/city/lookup` +
+    `?location=${encodeURIComponent(location)}` +
+    `&key=${HEFENG_API_KEY}&range=cn&number=3&lang=zh`
+  );
+}
+
+function weatherUrl(kind, locationId, query = "") {
+  return (
+    `https://${WEATHER_HOST}${kind}` +
+    `?location=${encodeURIComponent(locationId)}` +
+    `&key=${HEFENG_API_KEY}${query}`
+  );
+}
 
 const CODE_MESSAGES = {
   200: "成功",
@@ -97,16 +118,18 @@ async function lookupCity(city) {
   if (typeof city !== "string" || !city.trim()) {
     throw new Error("城市名不能为空");
   }
-  const url =
-    `https://${GEO_HOST}/v2/city/lookup` +
-    `?location=${encodeURIComponent(city.trim())}` +
-    `&key=${HEFENG_API_KEY}&range=cn&number=1&lang=zh`;
-  const data = await fetchJson(url);
+  const data = await fetchJson(geoLookupUrl(city.trim()));
   checkCode(data);
   if (!Array.isArray(data.location) || data.location.length === 0) {
     throw new Error(`未找到城市「${city}」，请换个关键词或直接传 Location ID`);
   }
-  return data.location[0];
+  // number=3 取多条后做一次本地优选：“嘉兴海盐”这类组合词优先匹配
+  // adm2（地级市）+ name（区县）拼接命中的结果，而不是只取第一条
+  const query = city.trim();
+  const exact =
+    data.location.find((item) => `${item.adm2 || ""}${item.name}` === query) ||
+    data.location.find((item) => item.name && query.endsWith(item.name));
+  return exact || data.location[0];
 }
 
 /**
@@ -139,11 +162,9 @@ async function getWeatherNow(city = "北京", options = {}) {
   assertKey();
   const { lang = "zh", unit = "m" } = options;
   const { id, info } = await resolveLocation(city);
-  const url =
-    `https://${WEATHER_HOST}/v7/weather/now` +
-    `?location=${encodeURIComponent(id)}` +
-    `&key=${HEFENG_API_KEY}&lang=${lang}&unit=${unit}`;
-  const data = await fetchJson(url);
+  const data = await fetchJson(
+    weatherUrl("/v7/weather/now", id, `&lang=${lang}&unit=${unit}`),
+  );
   checkCode(data);
   return {
     city: info ? info.name : String(city),
@@ -172,11 +193,9 @@ async function getWeatherForecast(city = "北京", options = {}) {
     throw new Error(`days 只能是 ${allowed.join("/")}，当前为 ${days}`);
   }
   const { id, info } = await resolveLocation(city);
-  const url =
-    `https://${WEATHER_HOST}/v7/weather/${days}d` +
-    `?location=${encodeURIComponent(id)}` +
-    `&key=${HEFENG_API_KEY}&lang=${lang}&unit=${unit}`;
-  const data = await fetchJson(url);
+  const data = await fetchJson(
+    weatherUrl(`/v7/weather/${days}d`, id, `&lang=${lang}&unit=${unit}`),
+  );
   checkCode(data);
   return {
     city: info ? info.name : String(city),

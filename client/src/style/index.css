@@ -316,6 +316,7 @@
 
 /* ================= 底部输入区 ================= */
 .input-bar {
+  position: relative;
   padding: 10px 16px calc(16px + env(safe-area-inset-bottom));
 }
 
@@ -326,9 +327,9 @@
 
 .input-card {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 8px 8px 20px;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 8px 8px 8px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 20px;
@@ -337,6 +338,188 @@
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+}
+
+/* 输入行：纸夹按钮 + 输入框 + 发送按钮 */
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 8px;
+}
+
+/* 附件按钮：Phosphor 链接图标 */
+.attach-btn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  color: #8b93a7;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.attach-btn:hover:not(:disabled) {
+  color: #cfd2ff;
+  background: rgba(124, 108, 255, 0.14);
+  border-color: rgba(139, 124, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.attach-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.attach-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.file-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 附件预览条：输入行正上方，同属一张卡片，形成包裹效果 */
+.attach-bar {
+  padding: 4px 4px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(139, 124, 255, 0.25);
+  overflow: hidden;
+}
+
+.attach-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attach-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 240px;
+  padding: 7px 8px 7px 7px;
+  background: rgba(124, 108, 255, 0.1);
+  border: 1px solid rgba(139, 124, 255, 0.3);
+  border-radius: 13px;
+  animation: msgIn 0.25s ease both;
+}
+
+/* 按类型微调边框色，一眼区分图片和文档 */
+.attach-chip.kind-image {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.attach-chip.kind-pdf {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.attach-chip.kind-word {
+  border-color: rgba(96, 165, 250, 0.45);
+}
+.attach-chip.kind-excel {
+  border-color: rgba(52, 211, 153, 0.45);
+}
+.attach-chip.kind-ppt {
+  border-color: rgba(251, 146, 60, 0.45);
+}
+
+.attach-thumb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.attach-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attach-ext {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #cfd2ff;
+}
+
+.attach-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.attach-name {
+  font-size: 12.5px;
+  color: #e8ebf4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attach-size {
+  font-size: 11px;
+  color: #8b93a7;
+}
+
+.attach-remove {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  color: #8b93a7;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.attach-remove:hover {
+  color: #fff;
+  background: rgba(220, 38, 38, 0.5);
+}
+
+.attach-error {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+.attach-error-alone {
+  margin: 0 0 4px 12px;
+}
+
+/* 预览条进出场 */
+.attach-bar-enter-active,
+.attach-bar-leave-active {
+  transition:
+    opacity 0.25s ease,
+    max-height 0.25s ease;
+  max-height: 220px;
+}
+.attach-bar-enter-from,
+.attach-bar-leave-to {
+  opacity: 0;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
 }
 
 /* 聚焦时整张卡片高亮发光 */
@@ -395,6 +578,151 @@
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* 生成中：输入卡片呼吸高亮，提示用户正在输出 */
+.input-card.generating {
+  border-color: rgba(251, 146, 60, 0.55);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(251, 146, 60, 0.1);
+}
+
+/* 发送态：紫色渐变上箭头（默认样式） */
+/* 等待态：脉冲呼吸，告诉用户首字还没到 */
+.send-btn.waiting {
+  background: linear-gradient(135deg, #b45309, #f59e0b);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+  animation: stopPulse 1.4s ease-in-out infinite;
+}
+
+/* 输出/停止态：红色停止键 */
+.send-btn.stop {
+  background: linear-gradient(135deg, #dc2626, #f87171);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+}
+
+.send-btn.waiting:hover,
+.send-btn.stop:hover {
+  transform: translateY(-1px) scale(1.03);
+  filter: brightness(1.08);
+}
+
+.send-btn.waiting:active,
+.send-btn.stop:active {
+  transform: scale(0.94);
+}
+
+@keyframes stopPulse {
+  0%,
+  100% {
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px rgba(245, 158, 11, 0.35),
+      0 0 0 6px rgba(245, 158, 11, 0.12);
+  }
+}
+
+/* 已暂停标记：历史消息上的小徽标 */
+.think-stopped {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #fca5a5;
+  background: rgba(220, 38, 38, 0.14);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  border-radius: 999px;
+}
+
+/* 用户消息上的附件名 chip */
+.msg-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.msg-row.user .msg-files {
+  justify-content: flex-end;
+}
+
+.msg-file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.07);
+  color: #dfe3ef;
+}
+
+.msg-file-kind {
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-radius: 999px;
+  background: rgba(124, 108, 255, 0.25);
+  color: #cfd2ff;
+}
+
+.msg-file-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.msg-file-size {
+  flex-shrink: 0;
+  color: #9aa3b8;
+}
+
+/* 回到底部：用户上翻后悬浮在输入框上方，点击恢复跟随 */
+.back-to-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, -8px);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #e8ebf4;
+  background: rgba(20, 26, 42, 0.92);
+  border: 1px solid rgba(139, 124, 255, 0.45);
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+  z-index: 10;
+}
+
+.back-to-bottom:hover {
+  transform: translate(-50%, -10px);
+  border-color: rgba(139, 124, 255, 0.8);
+}
+
+/* 进出场：淡入 + 上浮 */
+.back-bottom-enter-active,
+.back-bottom-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.back-bottom-enter-from,
+.back-bottom-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 0);
 }
 
 .input-hint {
