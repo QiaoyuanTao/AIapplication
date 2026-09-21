@@ -48,20 +48,40 @@ export const ATTACH_ACCEPT = [
 
 let uid = 0;
 
+/**
+ * 功能：取文件名后缀小写，用于白名单校验与类型归类。
+ * @param {string} name - 文件名（含扩展名）。
+ * @returns {string} 小写扩展名，无后缀返回空串。
+ */
 function extOf(name) {
   return name.split(".").pop()?.toLowerCase() ?? "";
 }
 
+/**
+ * 功能：判断文件是否为可预览图片（SVG 除外，防脚本执行）。
+ * @param {File} file - 待判断的文件对象。
+ * @returns {boolean} true 为可生成对象 URL 预览的图片。
+ */
 function isImage(file) {
   return file.type.startsWith("image/") && file.type !== "image/svg+xml";
 }
 
+/**
+ * 功能：将字节数格式化为人类可读大小。
+ * @param {number} bytes - 字节数。
+ * @returns {string} 如 "1.5 MB" 的可读字符串。
+ */
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
+/**
+ * 功能：按 MIME 与扩展名归类附件，用于 chip 边框色与消息区徽标。
+ * @param {File} file - 待归类的文件对象。
+ * @returns {string} image | pdf | word | excel | ppt | file 其中之一。
+ */
 function kindOf(file) {
   const ext = extOf(file.name);
   if (file.type.startsWith("image/")) return "image";
@@ -72,6 +92,12 @@ function kindOf(file) {
   return "file";
 }
 
+/**
+ * 功能：校验单个文件是否可加入附件列表（数量/大小/格式/MIME）。
+ * @param {File} file - 待校验的文件对象。
+ * @param {number} currentCount - 当前已选附件数，用于上限判断。
+ * @returns {string|null} 不合规返回原因文案，合规返回 null。
+ */
 function validateFile(file, currentCount) {
   if (currentCount >= ATTACH_RULES.maxCount) {
     return `最多上传 ${ATTACH_RULES.maxCount} 个文件`;
@@ -97,8 +123,9 @@ function validateFile(file, currentCount) {
 }
 
 /**
- * 附件管理：校验 + 预览 URL 生命周期 + 增删清空。
- * 只管本地文件状态，不管上传网络请求（后端接好 /upload 后再调）。
+ * 功能：创建附件本地状态管理，负责校验、预览 URL 生命周期与增删清空。
+ * @param {void} 无参数。
+ * @returns {{files: import("vue").Ref<Array>, error: import("vue").Ref<string>, hasFiles: import("vue").ComputedRef<boolean>, totalSize: import("vue").ComputedRef<number>, addFiles: Function, removeFile: Function, clear: Function}} 附件状态与操作方法集合。
  */
 export function useAttachments() {
   const files = ref([]);
@@ -109,6 +136,11 @@ export function useAttachments() {
     files.value.reduce((sum, item) => sum + item.file.size, 0),
   );
 
+  /**
+   * 功能：将文件选择框拿到的列表逐个校验后加入附件，超限截断。
+   * @param {FileList|File[]|null|undefined} fileList - 待加入的文件列表。
+   * @returns {number} 加入后的附件总数。
+   */
   function addFiles(fileList) {
     error.value = "";
     const list = Array.from(fileList ?? []);
@@ -134,6 +166,11 @@ export function useAttachments() {
     return files.value.length;
   }
 
+  /**
+   * 功能：按 id 移除单个附件并回收其预览 URL。
+   * @param {number} id - addFiles 时分配的附件 id。
+   * @returns {void} 无返回值，不存在直接返回。
+   */
   function removeFile(id) {
     const index = files.value.findIndex((item) => item.id === id);
     if (index === -1) return;
@@ -142,6 +179,11 @@ export function useAttachments() {
     if (!files.value.length) error.value = "";
   }
 
+  /**
+   * 功能：清空全部附件并回收所有预览 URL，发送后与卸载时调用。
+   * @param {void} 无参数。
+   * @returns {void} 无返回值。
+   */
   function clear() {
     for (const item of files.value) {
       if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);

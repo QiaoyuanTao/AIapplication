@@ -42,11 +42,22 @@ const thinkStick = useStickToBottom(thinkBox);
 const attachments = useAttachments();
 const fileInput = ref(null);
 
+/**
+ * 功能：打开系统文件选择框，用于选取图片/文档附件。
+ * 前置条件：仅在空闲可发送状态（action.mode === 'send'）下有效，生成中点击无效。
+ * @param {void} 无参数，依赖 fileInput 模板引用与 action 计算属性。
+ * @returns {void} 无返回值，直接触发 fileInput.click()。
+ */
 function openFilePicker() {
   if (action.value.mode !== "send") return;
   fileInput.value?.click();
 }
 
+/**
+ * 功能：将用户选取的文件加入附件列表，并重置 input 以支持重复选择同一文件。
+ * @param {Event} event - 原生 change 事件，event.target.files 为 FileList，event.target 为 HTMLInputElement。
+ * @returns {void} 无返回值，校验与报错由 useAttachments.addFiles 内部处理。
+ */
 function onFilesPicked(event) {
   attachments.addFiles(event.target.files);
   // 同一文件删后重选也要能触发 change
@@ -61,7 +72,11 @@ const suggestions = [
   "什么是 Promise？举个例子",
 ];
 
-// 按钮派生状态：提交时根据生成状态决定行为与展示
+/**
+ * 功能：根据生成状态机派生发送按钮的展示态与行为。
+ * @param {void} 无参数，依赖 status（GenStatus.IDLE / WAITING / STREAMING / ABORTED）。
+ * @returns {{mode: 'send'|'waiting'|'stop', title: string, disabled: boolean}} 按钮模式、悬浮提示、是否禁用。
+ */
 const action = computed(() => {
   if (status.value === GenStatus.IDLE) {
     return { mode: "send", title: "发送", disabled: false };
@@ -73,11 +88,21 @@ const action = computed(() => {
   return { mode: "stop", title: "停止生成", disabled: false };
 });
 
+/**
+ * 功能：切换指定消息思考块的展开/折叠状态。
+ * @param {Object} item - 消息对象，需含 thinkOpen 字段；传入 newMessage 或 message 列表中的 item。
+ * @param {boolean} item.thinkOpen - 当前是否展开，函数内取反。
+ * @returns {void} 无返回值，直接原地修改 item.thinkOpen。
+ */
 function toggleThink(item) {
   item.thinkOpen = !item.thinkOpen;
 }
 
-/** think 到达：打开思考框 + 按跟随意图滚动（用户上翻时不抢） */
+/**
+ * 功能：处理 think 流增量——强制展开思考框，并按粘性跟随意图滚动。
+ * @param {void} 无参数，读取 newMessage.thinking / thinkStick / chatStick / thinkBox / chatBox 响应式状态。
+ * @returns {Promise<void>} 异步返回滚动完成的 Promise，无业务返回值。
+ */
 async function handleThinkChunk() {
   newMessage.value.thinkOpen = true;
   // 情况 A：框内跟随 -> 框内滚到底；对话区看 chatStick 决定跟不跟
@@ -90,7 +115,11 @@ async function handleThinkChunk() {
   }
 }
 
-/** answer 到达：标记流式中 + 自动折叠思考 + 按跟随意图滚对话区 */
+/**
+ * 功能：处理 answer 流增量——首个回答到达时标记思考完成并自动折叠思考框，再按跟随意图滚对话区到底。
+ * @param {void} 无参数，读取并修改 newMessage.thinkingDone / thinkOpen / content，依赖 chatStick / chatBox。
+ * @returns {Promise<void>} 异步返回滚动完成的 Promise，无业务返回值。
+ */
 async function handleAnswerChunk() {
   if (!newMessage.value.thinkingDone) {
     newMessage.value.thinkingDone = true;
@@ -104,8 +133,9 @@ async function handleAnswerChunk() {
 }
 
 /**
- * 用户点“回到底部”：恢复两份跟随 + 双层滚到底
- * 思考框先内部滚到底，再把对话区滚到底，保证新内容可见
+ * 功能：用户点击“回到底部”——恢复对话区与思考框的跟随态，并将两层滚动条一次性滚到底。
+ * @param {void} 无参数，依赖 chatStick / thinkStick / thinkBox / chatBox。
+ * @returns {Promise<void>} 异步返回双层滚动完成的 Promise，无业务返回值。
  */
 async function backToBottom() {
   chatStick.stick();
@@ -114,12 +144,21 @@ async function backToBottom() {
   await scrollChatElToBottom(chatBox.value);
 }
 
-/** 是否展示回到底部按钮：非跟随且有内容可滚时展示 */
+/**
+ * 功能：判断是否展示“回到底部”悬浮按钮——仅当用户上翻脱离底部且存在可回看内容时展示。
+ * @param {void} 无参数，依赖 chatStick.isStick / message / newMessage。
+ * @returns {boolean} true 展示按钮，false 隐藏。
+ */
 const showBackToBottom = computed(() => {
   if (chatStick.isStick.value) return false;
   return message.value.length > 0 || !!newMessage.value.content || !!newMessage.value.thinking;
 });
 
+/**
+ * 功能：清空流式草稿（newMessage），回到初始待机态，供新一轮提问前调用。
+ * @param {void} 无参数，直接重置 newMessage 的 content / thinking / thinkingDone / thinkOpen。
+ * @returns {void} 无返回值。
+ */
 function resetStreaming() {
   newMessage.value.content = "";
   newMessage.value.thinking = "";
@@ -127,7 +166,11 @@ function resetStreaming() {
   newMessage.value.thinkOpen = true;
 }
 
-/** 表单提交：idle 发起新问答，生成中则暂停输出 */
+/**
+ * 功能：表单提交总入口————生成中则暂停输出；空闲时校验输入并发起 POST /api/ask 流式问答，全程归档与收尾。
+ * @param {void} 无参数，读取 input / attachments / generation / thinkEnabled，副作用：push 用户消息与 AI 回复、更新 newMessage。
+ * @returns {Promise<void>} 异步返回整轮问答结束的 Promise；暂停分支提前 return，无业务返回值。
+ */
 async function handleSubmit() {
   if (generation.isActive()) {
     generation.abort();
