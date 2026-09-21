@@ -1,0 +1,22 @@
+.input-card{display:flex;flex-direction:column;gap:0;padding:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);border-radius:20px;backdrop-filter:blur(14px);box-shadow:0 10px 30px rgba(0,0,0,.35);transition:border-color .2s,box-shadow .2s}
+.input-card:focus-within{border-color:rgba(139,124,255,.6);box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 4px rgba(124,108,255,.14)}
+.input-card.generating{border-color:rgba(251,146,60,.55);box-shadow:0 10px 30px rgba(0,0,0,.35),0 0 0 4px rgba(251,146,60,.1)}
+.input-row{display:flex;align-items:center;gap:10px;padding-left:8px}
+.attach-btn{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;border:1px solid transparent;border-radius:12px;color:#8b93a7;background:transparent;cursor:pointer;transition:all .2s ease}
+.attach-btn:hover:not(:disabled){color:#cfd2ff;background:rgba(124,108,255,.14);border-color:rgba(139,124,255,.35);transform:translateY(-1px)}
+.attach-btn:active:not(:disabled){transform:scale(.94)}
+.attach-btn:disabled{opacity:.4;cursor:not-allowed}
+.file-input-hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.chat-input{flex:1;height:42px;font-size:15px;color:#e8ebf4;background:transparent;border:none;outline:none}
+.chat-input::placeholder{color:#6b7387}
+.chat-input:disabled{opacity:.55}
+.send-btn{display:grid;place-items:center;width:42px;height:42px;border:none;border-radius:14px;color:#fff;background:linear-gradient(135deg,#6d5efc,#9b5cff);box-shadow:0 6px 16px rgba(124,108,255,.35);cursor:pointer;transition:transform .15s ease,opacity .2s,box-shadow .2s}
+.send-btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 20px rgba(124,108,255,.45)}
+.send-btn:active:not(:disabled){transform:translateY(0) scale(.96)}
+.send-btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.send-btn.waiting{background:linear-gradient(135deg,#b45309,#f59e0b);box-shadow:0 6px 16px rgba(245,158,11,.35);animation:stopPulse 1.4s ease-in-out infinite}
+.send-btn.stop{background:linear-gradient(135deg,#dc2626,#f87171);box-shadow:0 6px 16px rgba(220,38,38,.35)}
+.send-btn.waiting:hover,.send-btn.stop:hover{transform:translateY(-1px) scale(1.03);filter:brightness(1.08)}
+.send-btn.waiting:active,.send-btn.stop:active{transform:scale(.94)}
+@keyframes stopPulse{0%,100%{box-shadow:0 6px 16px rgba(245,158,11,.35)}50%{box-shadow:0 6px 16px rgba(245,158,11,.35),0 0 0 6px rgba(245,158,11,.12)}}
+.input-hint{margin:10px 4px 0;font-size:12px;color:#5c6478;text-align:center}

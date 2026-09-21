@@ -1,0 +1,56 @@
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 9vh 20px 0;
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(135deg, #6d5efc, #9b5cff 55%, #22d3ee);
+  box-shadow: 0 12px 34px rgba(124, 108, 255, 0.35);
+  animation: msgIn 0.4s ease both;
+}
+.empty-state h1 {
+  margin: 22px 0 8px;
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #a5b4fc, #67e8f9);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.empty-state p {
+  margin: 0 0 26px;
+  font-size: 14px;
+  color: #8b93a7;
+}
+.suggest-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  max-width: 560px;
+}
+.suggest-list button {
+  padding: 9px 16px;
+  font-size: 13.5px;
+  color: #c3c9d9;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.suggest-list button:hover {
+  color: #fff;
+  border-color: rgba(139, 124, 255, 0.65);
+  background: rgba(124, 108, 255, 0.12);
+  transform: translateY(-1px);
+}

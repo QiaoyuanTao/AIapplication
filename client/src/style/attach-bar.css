@@ -1,0 +1,102 @@
+.attach-bar {
+  padding: 4px 4px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed rgba(139, 124, 255, 0.25);
+  overflow: hidden;
+}
+.attach-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.attach-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 240px;
+  padding: 7px 8px 7px 7px;
+  background: rgba(124, 108, 255, 0.1);
+  border: 1px solid rgba(139, 124, 255, 0.3);
+  border-radius: 13px;
+  animation: msgIn 0.25s ease both;
+}
+.attach-chip.kind-image {
+  border-color: rgba(52, 211, 153, 0.4);
+}
+.attach-chip.kind-pdf {
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.attach-chip.kind-word {
+  border-color: rgba(96, 165, 250, 0.45);
+}
+.attach-chip.kind-excel {
+  border-color: rgba(52, 211, 153, 0.45);
+}
+.attach-chip.kind-ppt {
+  border-color: rgba(251, 146, 60, 0.45);
+}
+.attach-thumb {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.attach-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.attach-ext {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: #cfd2ff;
+}
+.attach-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+.attach-name {
+  font-size: 12.5px;
+  color: #e8ebf4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.attach-size {
+  font-size: 11px;
+  color: #8b93a7;
+}
+.attach-remove {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  color: #8b93a7;
+  background: rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.attach-remove:hover {
+  color: #fff;
+  background: rgba(220, 38, 38, 0.5);
+}
+.attach-error {
+  margin: 8px 2px 0;
+  font-size: 12px;
+  color: #fca5a5;
+}
+.attach-error-alone {
+  margin: 0 0 4px 12px;
+}
